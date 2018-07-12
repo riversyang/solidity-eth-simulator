@@ -1,10 +1,9 @@
 pragma solidity ^0.4.24;
 
 library EthereumChainData {
-    // 默认的区块 gasLimit 常量
-    uint256 constant BLOCK_GAS_LIMIT = 100;
     // 交易数据
     struct Transaction {
+        address from;
         uint256 nonce;
         uint256 gasLimit;
         uint256 gasPrice;
@@ -28,11 +27,15 @@ library EthereumChainData {
     // 区块数据
     struct Block {
         BlockHeader header;
-        mapping(uint256 => Transaction) transactionsTrie;
+        Transaction[] transactions;
     }
     // 区块链数据
     struct ChainData {
         Block[] blocks;
+    }
+
+    function appendBlockFromBytes(ChainData storage self, bytes _blockData) public {
+
     }
 
 }

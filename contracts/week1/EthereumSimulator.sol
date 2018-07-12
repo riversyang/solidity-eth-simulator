@@ -1,17 +1,27 @@
 pragma solidity ^0.4.24;
 
+import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./EthereumWorldState.sol";
 import "./EthereumChainData.sol";
+import "./EthereumMiner.sol";
 
 contract EthereumSimulator {
+    // 对所有 uint256 类型使用 SafeMath
+    using SafeMath for uint256;
+    // 默认的区块 gasLimit 常量
+    uint256 public constant BLOCK_GAS_LIMIT = 100;
     // 世界状态
     using EthereumWorldState for EthereumWorldState.StateData;
     EthereumWorldState.StateData worldState;
+    // 区块链数据
+    EthereumChainData.ChainData chainData;
     // 节点类型
     enum NodeType {Unknown, FullNode, Miner}
     mapping (address => NodeType) private nodesType;
     // 记录所有矿工地址的数组
     address[] private miners;
+    // 当前矿工地址
+    address private curMiner;
     // 所有矿工账户的余额总和
     uint256 private totalStake;
 
@@ -69,7 +79,42 @@ contract EthereumSimulator {
      * @dev 简化地模拟交易的处理
      * @notice 
      */
-    function processTransaction() external {
+    function processTransaction(
+        uint256 _gasLimit,
+        uint256 _gasPrice,
+        address _to,
+        uint256 _value,
+        bytes _data
+    )
+        external
+    {
+        require(_gasLimit <= BLOCK_GAS_LIMIT);
+        require(_data.length <= _gasLimit);
+        require(_data.length.mul(_gasPrice) <= worldState.getBalance(msg.sender));
+
+        EthereumMiner cm = EthereumMiner(curMiner);
+        // 简化的处理，以 _data 的长度作为要消耗的 gas 数量
+        uint256 curTxGas = _data.length;
+        if (curTxGas.add(cm.gasUsed()) >= BLOCK_GAS_LIMIT) {
+            // 如果当前区块的剩余 gas 已经不够处理这个交易，则将当前区块定稿
+            bytes memory blockData = cm.finalizeBlock();
+            EthereumChainData.appendBlockFromBytes(chainData, blockData);
+            // 选出下一个矿工
+            curMiner = selectNewMiner();
+            cm = EthereumMiner(curMiner);
+        }
+        // 将交易加入矿工的交易池中
+        cm.addTransaction(msg.sender, worldState.addNonce(msg.sender),
+            _gasLimit, _gasPrice, _to, _value, _data
+        );
+    }
+
+    /**
+     * @dev 基于简化的 PoS 算法选出下一个矿工地址
+     * @notice 
+     */
+    function selectNewMiner() private returns(address) {
 
     }
+
 }

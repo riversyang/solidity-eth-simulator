@@ -27,7 +27,6 @@ library EthereumWorldState {
         bytes _codeBinary
     )
         public
-        returns(bool)
     {
         bytes32 _codeHash;
 
@@ -61,8 +60,9 @@ library EthereumWorldState {
         address _addr
     )
         public
+        returns(uint256)
     {
-        self.stateTrie[_addr].nonce.add(1);
+        return self.stateTrie[_addr].nonce.add(1);
     }
 
     function getBalance(
@@ -82,8 +82,9 @@ library EthereumWorldState {
         uint256 _value
     )
         public
+        returns(uint256)
     {
-        self.stateTrie[_addr].balance.add(_value);
+        return self.stateTrie[_addr].balance.add(_value);
     }
 
     function subBalance(
@@ -92,9 +93,10 @@ library EthereumWorldState {
         uint256 _value
     )
         public
+        returns(uint256)
     {
         require(self.stateTrie[_addr].balance >= _value, "Balance is not enough.");
-        self.stateTrie[_addr].balance.sub(_value);
+        return self.stateTrie[_addr].balance.sub(_value);
     }
 
 }
