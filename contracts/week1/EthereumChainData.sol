@@ -34,6 +34,14 @@ library EthereumChainData {
         Block[] blocks;
     }
 
+    /**
+     * @dev 取得当前链中的区块数量（最大区块号）
+     * @notice 
+     */
+    function getChainLength(ChainData storage self) view public returns(uint256) {
+        return self.blocks.length;
+    }
+
     function appendBlockFromBytes(ChainData storage self, bytes _blockData) public {
 
     }

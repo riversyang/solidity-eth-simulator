@@ -1,13 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "./EthereumSimulator.sol";
+import "../openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./EthereumChainData.sol";
 
-contract EthereumMiner {
-    // 以太坊协议模拟器引用
-    EthereumSimulator private ethereumSim;
+contract EthereumMiner is SupportsInterfaceWithLookup {
     // 交易池
-    EthereumChainData.Transaction[] private transactionsPool;
+    EthereumChainData.Transaction[] internal transactionsPool;
     // 当前已消耗 gas 累计
     uint256 public gasUsed;
 
@@ -16,9 +14,10 @@ contract EthereumMiner {
      * @param _ethSim 以太坊协议模拟器合约地址
      * @notice 创建时需要存入一定量的资金
      */
-    constructor(EthereumSimulator _ethSim) public payable {
+    constructor() public payable {
         require(msg.value > 0);
-        ethereumSim = _ethSim;
+        _registerInterface(bytes4(keccak256("addTransaction(address,uint256,uint256,uint256,address,uint256,bytes)")));
+        _registerInterface(bytes4(keccak256("finalizeBlock()")));
     }
 
     /**
