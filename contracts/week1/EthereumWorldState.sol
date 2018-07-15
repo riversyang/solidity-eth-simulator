@@ -40,7 +40,8 @@ library EthereumWorldState {
         }
 
         self.stateTrie[_addr] = AccountState({
-            nonce: 0, balance: _value, storageRoot: EMPTY_HASH, codeHash: _codeHash
+            nonce: 0, balance: _value,
+            storageRoot: EMPTY_HASH, codeHash: _codeHash
         });
     }
 
@@ -62,7 +63,8 @@ library EthereumWorldState {
         public
         returns(uint256)
     {
-        return self.stateTrie[_addr].nonce.add(1);
+        self.stateTrie[_addr].nonce = self.stateTrie[_addr].nonce.add(1);
+        return self.stateTrie[_addr].nonce;
     }
 
     function getBalance(
@@ -84,7 +86,8 @@ library EthereumWorldState {
         public
         returns(uint256)
     {
-        return self.stateTrie[_addr].balance.add(_value);
+        self.stateTrie[_addr].balance = self.stateTrie[_addr].balance.add(_value);
+        return self.stateTrie[_addr].balance;
     }
 
     function subBalance(
@@ -96,7 +99,8 @@ library EthereumWorldState {
         returns(uint256)
     {
         require(self.stateTrie[_addr].balance >= _value, "Balance is not enough.");
-        return self.stateTrie[_addr].balance.sub(_value);
+        self.stateTrie[_addr].balance = self.stateTrie[_addr].balance.sub(_value);
+        return self.stateTrie[_addr].balance;
     }
 
 }
