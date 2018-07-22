@@ -11,9 +11,6 @@ contract EthereumSimulator is Ownable {
     using SafeMath for uint256;
     // 默认的区块 gasLimit 常量
     uint256 public constant BLOCK_GAS_LIMIT = 100;
-    // 世界状态
-    using EthereumWorldState for EthereumWorldState.StateData;
-    EthereumWorldState.StateData private worldState;
     // 区块链数据
     EthereumChainData.ChainData private chainData;
     // 记录所有矿工地址的数组

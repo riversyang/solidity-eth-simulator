@@ -2,16 +2,21 @@ pragma solidity ^0.4.24;
 
 import "../openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./EthereumChainData.sol";
+import "./EthereumWorldState.sol";
 
 contract EthereumMiner is SupportsInterfaceWithLookup {
+    // 世界状态
+    using EthereumWorldState for EthereumWorldState.StateData;
+    EthereumWorldState.StateData private worldState;
     // 交易池
     EthereumChainData.Transaction[] internal transactionsPool;
+    // 虚拟机实例
+    EthereumWorldState.VM internal vm;
     // 当前已消耗 gas 累计
     uint256 public gasUsed;
 
     /**
      * @dev 创建矿工合约，需要以太坊协议模拟器合约已创建
-     * @param _ethSim 以太坊协议模拟器合约地址
      * @notice 创建时需要存入一定量的资金
      */
     constructor() public payable {
@@ -35,16 +40,16 @@ contract EthereumMiner is SupportsInterfaceWithLookup {
     )
         external
     {
-        EthereumChainData.Transaction memory trasaction = EthereumChainData.Transaction({
+        EthereumChainData.Transaction memory transaction = EthereumChainData.Transaction({
             from: _from, nonce: _nonce, gasLimit: _gasLimit, gasPrice: _gasPrice, to: _to,
             value: _value, data: _data
         });
-        transactionsPool.push(trasaction);
+        transactionsPool.push(transaction);
         gasUsed += _data.length;
     }
 
     function finalizeBlock() external returns(bytes memory _blockData) {
-
+        // 执行交易池中的所有交易
     }
 
 }

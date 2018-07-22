@@ -17,7 +17,12 @@ library EthereumWorldState {
     // StateTrie data struct
     struct StateData {
         mapping(address => AccountState) stateTrie;
-        mapping(address => bytes) codeROM;
+        mapping(address => bytes) codeTrie;
+    }
+    // 虚拟机
+    struct VM {
+        bytes vmStack;
+        bytes vmMemory;
     }
 
     function createAccount(
@@ -33,7 +38,7 @@ library EthereumWorldState {
         if (_codeBinary.length > 0) {
             // 计算传入代码的 code 哈希
             _codeHash = keccak256(_codeBinary);
-            self.codeROM[_addr] = _codeBinary;
+            self.codeTrie[_addr] = _codeBinary;
         } else {
             // 使用常数作为 code 哈希
             _codeHash = EMPTY_HASH;
@@ -103,4 +108,34 @@ library EthereumWorldState {
         return self.stateTrie[_addr].balance;
     }
 
+    function getCode(
+        StateData storage self,
+        address _addr
+    )
+        view public
+        returns(bytes)
+    {
+        return self.codeTrie[_addr];
+    }
+
+    function applyMessage(
+        StateData storage self,
+        VM storage _vm,
+        uint256 _gas,
+        address _to,
+        address _sender,
+        uint256 _value,
+        bytes _data,
+        bytes _code,
+        uint256 _depth,
+        address _createAddress,
+        address _codeAddress,
+        bool _shouldTransferValue,
+        bool _isStatic
+    )
+        public
+        returns(uint256, bytes)
+    {
+
+    }
 }
