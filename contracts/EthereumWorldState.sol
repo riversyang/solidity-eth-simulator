@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 library EthereumWorldState {
     // 对所有 uint256 类型使用 SafeMath

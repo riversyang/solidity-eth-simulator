@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
+import "./openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./EthereumChainData.sol";
 import "./EthereumWorldState.sol";
 
