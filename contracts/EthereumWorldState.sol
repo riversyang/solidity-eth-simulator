@@ -18,20 +18,16 @@ library EthereumWorldState {
     struct StateData {
         mapping(address => AccountState) stateTrie;
         mapping(address => bytes) codeTrie;
-    }
-    // 虚拟机
-    struct VM {
-        bytes vmStack;
-        bytes vmMemory;
+        mapping(address => mapping(uint256 => bytes32)) storageTrie;
     }
 
-    function createAccount(
+    function createContractAccount(
         StateData storage self,
         address _addr,
         uint256 _value,
         bytes _codeBinary
     )
-        public
+        external
     {
         bytes32 _codeHash;
 
@@ -54,18 +50,40 @@ library EthereumWorldState {
         StateData storage self,
         address _addr
     )
+        external
         view
-        public
         returns(bool)
     {
         return (self.stateTrie[_addr].codeHash ^ EMPTY_HASH != 0);
+    }
+
+    function getCode(
+        StateData storage self,
+        address _addr
+    )
+        external
+        view
+        returns(bytes)
+    {
+        return self.codeTrie[_addr];
+    }
+
+    function getNonce(
+        StateData storage self,
+        address _addr
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return self.stateTrie[_addr].nonce;
     }
 
     function addNonce(
         StateData storage self,
         address _addr
     )
-        public
+        external
         returns(uint256)
     {
         self.stateTrie[_addr].nonce = self.stateTrie[_addr].nonce.add(1);
@@ -76,8 +94,8 @@ library EthereumWorldState {
         StateData storage self,
         address _addr
     )
+        external
         view
-        public
         returns(uint256)
     {
         return self.stateTrie[_addr].balance;
@@ -88,7 +106,7 @@ library EthereumWorldState {
         address _addr,
         uint256 _value
     )
-        public
+        external
         returns(uint256)
     {
         self.stateTrie[_addr].balance = self.stateTrie[_addr].balance.add(_value);
@@ -100,7 +118,7 @@ library EthereumWorldState {
         address _addr,
         uint256 _value
     )
-        public
+        external
         returns(uint256)
     {
         require(self.stateTrie[_addr].balance >= _value, "Balance is not enough.");
@@ -108,34 +126,4 @@ library EthereumWorldState {
         return self.stateTrie[_addr].balance;
     }
 
-    function getCode(
-        StateData storage self,
-        address _addr
-    )
-        view public
-        returns(bytes)
-    {
-        return self.codeTrie[_addr];
-    }
-
-    function applyMessage(
-        StateData storage self,
-        VM storage _vm,
-        uint256 _gas,
-        address _to,
-        address _sender,
-        uint256 _value,
-        bytes _data,
-        bytes _code,
-        uint256 _depth,
-        address _createAddress,
-        address _codeAddress,
-        bool _shouldTransferValue,
-        bool _isStatic
-    )
-        public
-        returns(uint256, bytes)
-    {
-
-    }
 }
