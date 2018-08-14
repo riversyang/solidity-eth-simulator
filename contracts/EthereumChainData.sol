@@ -53,6 +53,24 @@ contract EthereumChainData {
     // Chain data
     ChainData internal chainData;
 
+    function createGenesisBlock() internal {
+        require(chainData.blocks.length == 0, "Genesis block can only create once.");
+
+        BlockHeader memory gHeader = BlockHeader({
+            parentHash: keccak256(new bytes(0)),
+            beneficiary: 0x0, stateRoot: bytes32(0x0), transactionsRoot: bytes32(0x0),
+            difficulty: 0, number: 0, gasLimit:0, gasUsed:0,
+            timeStamp: block.timestamp, extraData: bytes32("Genesis Block")
+        });
+        Transaction memory gTx = Transaction({
+            from: 0x0, nonce:0, gasLimit:0, gasPrice:0, to: 0x0, value: 0, data: new bytes(0)
+        });
+        Block memory genesis = Block({
+            header: gHeader, txData: gTx
+        });
+        chainData.blocks.push(genesis);
+    }
+
     function getLatestBlockHash() public view returns (bytes32) {
         uint256 blockCount = chainData.blocks.length;
         require(blockCount > 0);
@@ -99,7 +117,7 @@ contract EthereumChainData {
         return chainData.blocks[blockCount - 1].header.difficulty.add(10);
     }
 
-    function emitLogTransaction(bytes32 _txHash) public {
+    function emitLogTransaction(bytes32 _txHash) internal {
         uint256 txIndex = chainData.transactions[_txHash];
         require(txIndex > 0);
         Transaction storage curTx = chainData.blocks[txIndex].txData;

@@ -5,9 +5,9 @@ var EthereumMiner3 = artifacts.require("../contracts/EthereumMiner");
 
 contract('EthereumSimulator', function(accounts) {
     var simulatorInstance = EthereumSimulator.deployed();
-    var minerInstance1 = EthereumMiner1.new({from: accounts[1], value: 30000000, gas: 3000000});
-    var minerInstance2 = EthereumMiner2.new({from: accounts[2], value: 30000000, gas: 3000000});
-    var minerInstance3 = EthereumMiner3.new({from: accounts[3], value: 30000000, gas: 3000000});
+    var minerInstance1 = EthereumMiner1.new({from: accounts[1], value: 20000000});
+    var minerInstance2 = EthereumMiner2.new({from: accounts[2], value: 20000000});
+    var minerInstance3 = EthereumMiner3.new({from: accounts[3], value: 20000000});
 
     it("Passes testcase 1 ", async function() {
         let defaultGas = 2000000;
@@ -25,7 +25,7 @@ contract('EthereumSimulator', function(accounts) {
         assert.equal(result, miner1.contract.address);
         result = await simulator.totalStake.call();
         console.log(result.toNumber());
-        assert.equal(result, 90000);
+        assert.equal(result, 30000000);
         // let result;
         // result = await instance.logMyData({gas: defaultGas});
         // result.logs.forEach(log => {

@@ -16,6 +16,8 @@ contract EthereumMiner is
     uint256 public gasUsed;
     // 是否正在记账
     bool private isCurrentMiner;
+    // 以太坊网络模拟器
+    EthereumSimulatorBase private networkSimulator;
 
     /**
      * @dev 创建矿工合约，需要以太坊协议模拟器合约已创建
@@ -26,19 +28,7 @@ contract EthereumMiner is
         _registerInterface(bytes4(keccak256("addTransaction(address,uint256,uint256,address,uint256,bytes)")));
         _registerInterface(bytes4(keccak256("finalizeBlock()")));
 
-        BlockHeader memory gHeader = BlockHeader({
-            parentHash: keccak256(new bytes(0)),
-            beneficiary: 0x0, stateRoot: bytes32(0x0), transactionsRoot: bytes32(0x0),
-            difficulty: 0, number: 0, gasLimit:0, gasUsed:0,
-            timeStamp: block.timestamp, extraData: bytes32("Genesis Block")
-        });
-        Transaction memory gTx = Transaction({
-            from: 0x0, nonce:0, gasLimit:0, gasPrice:0, to: 0x0, value: 0, data: new bytes(0)
-        });
-        Block memory genesis = Block({
-            header: gHeader, txData: gTx
-        });
-        chainData.blocks.push(genesis);
+        createGenesisBlock();
     }
 
     modifier isAccounting() {
@@ -51,17 +41,35 @@ contract EthereumMiner is
         _;
     }
 
-    function register(address _addr) external onlyOwner {
-        EthereumSimulatorBase sim = EthereumSimulatorBase(_addr);
-        require(sim.registerMiner.value(30000)(), "Failed to register miner.");
+    modifier onlyFromSimulator() {
+        require(
+            address(msg.sender) == address(networkSimulator),
+            "Only accept calling from Network Simulator."
+        );
+        _;
     }
 
-    function unregister(address _addr) external onlyOwner {
-        EthereumSimulatorBase sim = EthereumSimulatorBase(_addr);
-        require(sim.unregisterMiner(), "Failed to unregister miner.");
+    function register(address _addr) external isNotAccounting onlyOwner {
+        networkSimulator = EthereumSimulatorBase(_addr);
+        uint256 _value = address(this).balance / 2;
+        require(
+            networkSimulator.registerMiner.value(_value)(),
+            "Failed to register miner."
+        );
     }
 
-    function prepareToCreateBlock() external isNotAccounting {
+    function unregister() external isNotAccounting onlyOwner {
+        require(
+            networkSimulator.unregisterMiner(),
+            "Failed to unregister miner."
+        );
+    }
+
+    function applyReward(uint256 _reward) external onlyFromSimulator {
+        addBalance(address(this), _reward);
+    }
+
+    function prepareToCreateBlock() external isNotAccounting onlyFromSimulator {
         isCurrentMiner = true;
     }
 
@@ -79,6 +87,7 @@ contract EthereumMiner is
     )
         external
         isAccounting
+        onlyFromSimulator
         returns (bool)
     {
         // 需要创世区块创建之后才能开始处理交易
@@ -104,7 +113,7 @@ contract EthereumMiner is
         }
     }
 
-    function finalizeBlock() external isAccounting returns (bytes) {
+    function finalizeBlock() external isAccounting onlyFromSimulator returns (bytes) {
         // 执行交易池中的所有交易
         require(transactionsPool.length > 0);
         Transaction memory transaction = Transaction({
@@ -124,7 +133,7 @@ contract EthereumMiner is
         isCurrentMiner = false;
     }
 
-    function applyBlock(bytes _blockData) external isNotAccounting {
+    function applyBlock(bytes _blockData) external isNotAccounting onlyFromSimulator {
 
     }
 

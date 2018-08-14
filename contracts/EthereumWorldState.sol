@@ -28,7 +28,7 @@ contract EthereumWorldState {
         uint256 _value,
         bytes _codeBinary
     )
-        public
+        internal
     {
         bytes32 _codeHash;
 
@@ -47,74 +47,33 @@ contract EthereumWorldState {
         });
     }
 
-    function hasCode(
-        address _addr
-    )
-        public
-        view
-        returns(bool)
-    {
+    function hasCode(address _addr) public view returns (bool) {
         return (worldState.stateTrie[_addr].codeHash ^ EMPTY_HASH != 0);
     }
 
-    function getCode(
-        address _addr
-    )
-        public
-        view
-        returns(bytes)
-    {
+    function getCode(address _addr) public view returns (bytes) {
         return worldState.codeTrie[_addr];
     }
 
-    function getNonce(
-        address _addr
-    )
-        public
-        view
-        returns(uint256)
-    {
+    function getNonce(address _addr) public view returns (uint256) {
         return worldState.stateTrie[_addr].nonce;
     }
 
-    function addNonce(
-        address _addr
-    )
-        public
-        returns(uint256)
-    {
+    function addNonce(address _addr) internal returns (uint256) {
         worldState.stateTrie[_addr].nonce = worldState.stateTrie[_addr].nonce.add(1);
         return worldState.stateTrie[_addr].nonce;
     }
 
-    function getBalance(
-        address _addr
-    )
-        public
-        view
-        returns(uint256)
-    {
+    function getBalance(address _addr) public view returns (uint256) {
         return worldState.stateTrie[_addr].balance;
     }
 
-    function addBalance(
-        address _addr,
-        uint256 _value
-    )
-        public
-        returns(uint256)
-    {
+    function addBalance(address _addr, uint256 _value) internal returns (uint256) {
         worldState.stateTrie[_addr].balance = worldState.stateTrie[_addr].balance.add(_value);
         return worldState.stateTrie[_addr].balance;
     }
 
-    function subBalance(
-        address _addr,
-        uint256 _value
-    )
-        public
-        returns(uint256)
-    {
+    function subBalance(address _addr, uint256 _value) internal returns (uint256) {
         require(worldState.stateTrie[_addr].balance >= _value, "Balance is not enough.");
         worldState.stateTrie[_addr].balance = worldState.stateTrie[_addr].balance.sub(_value);
         return worldState.stateTrie[_addr].balance;

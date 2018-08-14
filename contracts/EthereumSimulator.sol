@@ -2,21 +2,23 @@ pragma solidity ^0.4.24;
 
 import "./openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./EthereumMiner.sol";
+import "./openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 
 contract EthereumSimulator {
     // 使用 AddressUtils
     using AddressUtils for address;
     // 对所有 uint256 类型使用 SafeMath
     using SafeMath for uint256;
+    // 给矿工的区块奖励
+    uint256 public constant BLOCK_REWARD = 100000000;
     // 记录所有矿工地址的数组
-    address[] public allMiners;
+    EthereumMinerBase[] public allMiners;
     // 矿工地址到其 Stake 数值的映射
     mapping (address => uint256) private minerStakes;
     // 矿工地址到其在 allMiners 数组中索引的映射
     mapping (address => uint256) private allMinersIndex;
     // 当前矿工地址
-    address public curMiner;
+    EthereumMinerBase public curMiner;
     // 所有矿工账户的余额总和
     uint256 public totalStake;
 
@@ -45,13 +47,16 @@ contract EthereumSimulator {
             "Your contract doesn't have necessary functions."
         );
 
-        if (allMiners.length == 0 || allMinersIndex[msg.sender] == 0 && msg.sender != allMiners[0]) {
+        if (allMiners.length == 0 || 
+            allMinersIndex[msg.sender] == 0 && 
+            EthereumMinerBase(msg.sender) != allMiners[0]) 
+        {
             allMinersIndex[msg.sender] = allMiners.length;
-            allMiners.push(msg.sender);
+            allMiners.push(EthereumMinerBase(msg.sender));
             totalStake += msg.value;
             minerStakes[msg.sender] = msg.value;
             if (allMiners.length == 1) {
-                curMiner = msg.sender;
+                curMiner = allMiners[0];
             }
             return true;
         } else {
@@ -68,11 +73,11 @@ contract EthereumSimulator {
         require(allMiners.length > 1, "The simulator needs at least one miner to work.");
 
         uint256 minerIndex = allMinersIndex[msg.sender];
-        if (minerIndex > 0 || msg.sender == allMiners[0]) {
+        if (minerIndex > 0 || EthereumMinerBase(msg.sender) == allMiners[0]) {
             uint256 lastMinerIndex = allMiners.length.sub(1);
-            address lastMiner = allMiners[lastMinerIndex];
+            EthereumMinerBase lastMiner = allMiners[lastMinerIndex];
             allMiners[minerIndex] = lastMiner;
-            allMiners[lastMinerIndex] = 0;
+            delete allMiners[lastMinerIndex];
             allMiners.length--;
             allMinersIndex[msg.sender] = 0;
             totalStake -= minerStakes[msg.sender];
@@ -96,7 +101,7 @@ contract EthereumSimulator {
             curAddress = allMiners[i];
             tmpSum = tmpSum.add(minerStakes[curAddress]);
             if (tmpSum > rand) {
-                curMiner = curAddress;
+                curMiner = EthereumMinerBase(curAddress);
                 break;
             }
         }
@@ -116,17 +121,23 @@ contract EthereumSimulator {
         external
     {
         require(allMiners.length > 0);
-        EthereumMiner cm = EthereumMiner(curMiner);
-        cm.addTransaction(msg.sender, _gasLimit, _gasPrice, _to, _value, _data);
-        bytes memory blockData = cm.finalizeBlock();
+        curMiner.applyReward(BLOCK_REWARD);
+        curMiner.addTransaction(msg.sender, _gasLimit, _gasPrice, _to, _value, _data);
+        bytes memory blockData = curMiner.finalizeBlock();
         for (uint256 i = 0; i < allMiners.length; i++) {
             if (allMiners[i] != curMiner) {
-                cm = EthereumMiner(allMiners[i]);
-                cm.applyBlock(blockData);
+                allMiners[i].applyReward(BLOCK_REWARD);
+                allMiners[i].applyBlock(blockData);
             }
         }
         selectNewMiner();
-        EthereumMiner(curMiner).addTransaction(msg.sender, _gasLimit, _gasPrice, _to, _value, _data);
     }
 
+}
+
+interface EthereumMinerBase {
+    function addTransaction(address, uint256, uint256, address, uint256, bytes) external;
+    function applyReward(uint256) external;
+    function finalizeBlock() external returns (bytes);
+    function applyBlock(bytes) external;
 }
