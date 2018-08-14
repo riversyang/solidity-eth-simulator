@@ -1,10 +1,13 @@
 pragma solidity ^0.4.24;
 
+import "./openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./EthereumChainData.sol";
 import "./EthereumWorldState.sol";
 
 contract EthereumMiner is SupportsInterfaceWithLookup {
+    // 对所有 uint256 类型使用 SafeMath
+    using SafeMath for uint256;
     // 默认的区块 gasLimit 常量
     uint256 public constant BLOCK_GAS_LIMIT = 100;
     // 世界状态
@@ -71,7 +74,7 @@ contract EthereumMiner is SupportsInterfaceWithLookup {
         // 获取当前的 World State
         EthereumWorldState.StateData storage curState = stateDB[uint256(chainData.blocks.length - 1)];
         // 交易发送者账户的余额需要大于交易实际要消耗的 gas * gasPrice
-        require(_data.length.mul(_gasPrice) <= curState.getBalance(_from));
+        require(uint256(_data.length).mul(_gasPrice) <= curState.getBalance(_from));
 
         if (gasUsed + _data.length > BLOCK_GAS_LIMIT) {
             return false;

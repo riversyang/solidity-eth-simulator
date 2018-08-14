@@ -31,19 +31,9 @@ contract EthereumSimulator is Ownable {
      */
     constructor() public payable {
         bytes memory codeBinary = new bytes(0);
-        createAccount(codeBinary);
         minerStakes[msg.sender] = msg.value;
         allMiners.push(msg.sender);
         totalStake = msg.value;
-    }
-
-    /**
-     * @dev 调用内部函数模拟客户端的创建账户操作
-     * @param _codeBinary 模拟随账户创建的 EVM 代码，可以使用任意字节数据
-     * @notice 此函数需要标记为 payable，以便转入一定量的 Ether 作为公用的账户余额
-     */
-    function createAccount(bytes _codeBinary) public payable {
-        worldState.createAccount(msg.sender, msg.value, _codeBinary);
     }
 
     /**
@@ -116,8 +106,8 @@ contract EthereumSimulator is Ownable {
         require(_data.length <= BLOCK_GAS_LIMIT);
         EthereumMiner cm = EthereumMiner(curMiner);
         if (!cm.addTransaction(msg.sender, _gasLimit, _gasPrice, _to, _value, _data)) {
-            bytes blockData = cm.finalizeBlock();
-            for (int i = 0; i < allMiners.length; i++) {
+            bytes memory blockData = cm.finalizeBlock();
+            for (uint256 i = 0; i < allMiners.length; i++) {
                 if (allMiners[i] != curMiner) {
                     cm = EthereumMiner(allMiners[i]);
                     cm.applyBlock(blockData);
@@ -126,45 +116,6 @@ contract EthereumSimulator is Ownable {
             selectNewMiner();
             EthereumMiner(curMiner).addTransaction(msg.sender, _gasLimit, _gasPrice, _to, _value, _data);
         }
-    }
-
-    /**
-     * @dev 简化地模拟交易的处理
-     * @notice 
-     */
-    function processTransaction(
-        uint256 _gasLimit,
-        uint256 _gasPrice,
-        address _to,
-        uint256 _value,
-        bytes _data
-    )
-        external
-    {
-        // 需要创世区块创建之后才能开始处理交易
-        require(EthereumChainData.getChainLength(chainData) > 0);
-        // 交易的 gasLimit 需要小于区块的 gasLimit
-        require(_gasLimit <= BLOCK_GAS_LIMIT);
-        // 交易的实际 gas 消耗需要小于交易自己指定的 gasLimit
-        require(_data.length <= _gasLimit);
-        // 交易发送者账户的余额需要大于交易实际要消耗的 gas * gasPrice
-        require(_data.length.mul(_gasPrice) <= worldState.getBalance(msg.sender));
-
-        EthereumMiner cm = EthereumMiner(curMiner);
-        // 简化的处理，以 _data 的长度作为要消耗的 gas 数量
-        uint256 curTxGas = _data.length;
-        if (curTxGas.add(cm.gasUsed()) >= BLOCK_GAS_LIMIT) {
-            // 如果当前区块的剩余 gas 已经不够处理这个交易，则将当前区块定稿
-            bytes memory blockData = cm.finalizeBlock();
-            EthereumChainData.appendBlockFromBytes(chainData, blockData);
-            // 选出下一个矿工
-            curMiner = selectNewMiner();
-            cm = EthereumMiner(curMiner);
-        }
-        // 将交易加入矿工的交易池中
-        cm.addTransaction(msg.sender, worldState.addNonce(msg.sender),
-            _gasLimit, _gasPrice, _to, _value, _data
-        );
     }
 
     /**
