@@ -57,6 +57,7 @@ contract EthereumSimulator {
             minerStakes[msg.sender] = msg.value;
             if (allMiners.length == 1) {
                 curMiner = allMiners[0];
+                curMiner.prepareToCreateBlock();
             }
             return true;
         } else {
@@ -102,6 +103,7 @@ contract EthereumSimulator {
             tmpSum = tmpSum.add(minerStakes[curAddress]);
             if (tmpSum > rand) {
                 curMiner = EthereumMinerBase(curAddress);
+                curMiner.prepareToCreateBlock();
                 break;
             }
         }
@@ -111,7 +113,7 @@ contract EthereumSimulator {
      * @dev 向当前矿工发送一个交易
      * @notice 
      */
-    function sendTransaction(
+    function processTransaction(
         uint256 _gasLimit,
         uint256 _gasPrice,
         address _to,
@@ -120,13 +122,12 @@ contract EthereumSimulator {
     )
         external
     {
-        require(allMiners.length > 0);
+        require(allMiners.length > 0, "Need at least one miner.");
         curMiner.applyReward(BLOCK_REWARD);
         curMiner.addTransaction(msg.sender, _gasLimit, _gasPrice, _to, _value, _data);
         bytes memory blockData = curMiner.finalizeBlock();
         for (uint256 i = 0; i < allMiners.length; i++) {
             if (allMiners[i] != curMiner) {
-                allMiners[i].applyReward(BLOCK_REWARD);
                 allMiners[i].applyBlock(blockData);
             }
         }
@@ -136,6 +137,7 @@ contract EthereumSimulator {
 }
 
 interface EthereumMinerBase {
+    function prepareToCreateBlock() external;
     function addTransaction(address, uint256, uint256, address, uint256, bytes) external;
     function applyReward(uint256) external;
     function finalizeBlock() external returns (bytes);

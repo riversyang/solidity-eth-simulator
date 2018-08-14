@@ -24,7 +24,7 @@ contract EthereumMiner is
      * @notice 创建时需要存入一定量的资金
      */
     constructor() public payable {
-        require(msg.value > 0);
+        require(msg.value > 0, "You need to transfer value for miner contract.");
         _registerInterface(bytes4(keccak256("addTransaction(address,uint256,uint256,address,uint256,bytes)")));
         _registerInterface(bytes4(keccak256("finalizeBlock()")));
 
@@ -32,18 +32,19 @@ contract EthereumMiner is
     }
 
     modifier isAccounting() {
-        require(isCurrentMiner);
+        require(isCurrentMiner, "Miner is not accounting.");
         _;
     }
 
     modifier isNotAccounting() {
-        require(!isCurrentMiner);
+        require(!isCurrentMiner, "Miner is accounting.");
         _;
     }
 
     modifier onlyFromSimulator() {
         require(
-            address(msg.sender) == address(networkSimulator),
+            (msg.sender == address(networkSimulator) ||
+            tx.origin == owner),
             "Only accept calling from Network Simulator."
         );
         _;
@@ -66,7 +67,7 @@ contract EthereumMiner is
     }
 
     function applyReward(uint256 _reward) external onlyFromSimulator {
-        addBalance(address(this), _reward);
+        addBalance(address(owner), _reward);
     }
 
     function prepareToCreateBlock() external isNotAccounting onlyFromSimulator {
@@ -91,13 +92,13 @@ contract EthereumMiner is
         returns (bool)
     {
         // 需要创世区块创建之后才能开始处理交易
-        require(chainData.blocks.length > 0);
+        require(chainData.blocks.length > 0, "Need to create genesis block first.");
         // 交易的 gasLimit 需要小于区块的 gasLimit
-        require(_gasLimit <= BLOCK_GAS_LIMIT);
+        require(_gasLimit <= BLOCK_GAS_LIMIT, "Transaction gas limit reached.");
         // 交易的实际 gas 消耗需要小于交易自己指定的 gasLimit
-        require(_data.length <= _gasLimit);
+        require(_data.length <= _gasLimit, "Too many transaction data.");
         // 交易发送者账户的余额需要大于交易实际要消耗的 gas * gasPrice
-        require(uint256(_data.length).mul(_gasPrice) <= getBalance(_from));
+        require(uint256(_data.length).mul(_gasPrice) <= getBalance(_from), "Balance not enough.");
 
         if (gasUsed + _data.length > BLOCK_GAS_LIMIT) {
             return false;
@@ -115,7 +116,7 @@ contract EthereumMiner is
 
     function finalizeBlock() external isAccounting onlyFromSimulator returns (bytes) {
         // 执行交易池中的所有交易
-        require(transactionsPool.length > 0);
+        require(transactionsPool.length > 0, "Need to add transaction before finalize block.");
         Transaction memory transaction = Transaction({
             from: transactionsPool[0].from,
             nonce: transactionsPool[0].nonce,
@@ -125,9 +126,13 @@ contract EthereumMiner is
             value: transactionsPool[0].value,
             data: transactionsPool[0].data
         });
-        BlockHeader memory header = initBlockHeader(header, transaction.data.length);
-        Block memory newBlock = Block({header: header, txData: transaction});
+        BlockHeader memory bHeader = initBlockHeader(bHeader, transaction.data.length);
+        Block memory newBlock = Block({header: bHeader, txData: transaction});
         chainData.blocks.push(newBlock);
+        addBalance(transaction.to, transaction.value);
+        subBalance(transaction.from, transaction.value);
+        bytes32 txHash = getLatestTransactionHash();
+        chainData.transactions[txHash] = chainData.blocks.length - 1;
         emitLogTransaction(getLatestTransactionHash());
         delete transactionsPool;
         isCurrentMiner = false;
@@ -141,7 +146,7 @@ contract EthereumMiner is
         private view returns (BlockHeader)
     {
         _bHeader.parentHash = getLatestBlockHash();
-        _bHeader.beneficiary = address(this);
+        _bHeader.beneficiary = owner;
         _bHeader.stateRoot = 0x0;
         _bHeader.transactionsRoot = 0x0;
         _bHeader.difficulty = getDifficulty();
