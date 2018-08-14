@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-library EthereumWorldState {
+contract EthereumWorldState {
     // 对所有 uint256 类型使用 SafeMath
     using SafeMath for uint256;
     // 空字符串的哈希值常量
@@ -21,109 +21,103 @@ library EthereumWorldState {
         mapping(address => mapping(uint256 => bytes32)) storageTrie;
     }
 
+    StateData internal worldState;
+
     function createContractAccount(
-        StateData storage self,
         address _addr,
         uint256 _value,
         bytes _codeBinary
     )
-        external
+        public
     {
         bytes32 _codeHash;
 
         if (_codeBinary.length > 0) {
             // 计算传入代码的 code 哈希
             _codeHash = keccak256(_codeBinary);
-            self.codeTrie[_addr] = _codeBinary;
+            worldState.codeTrie[_addr] = _codeBinary;
         } else {
             // 使用常数作为 code 哈希
             _codeHash = EMPTY_HASH;
         }
 
-        self.stateTrie[_addr] = AccountState({
+        worldState.stateTrie[_addr] = AccountState({
             nonce: 0, balance: _value,
             storageRoot: EMPTY_HASH, codeHash: _codeHash
         });
     }
 
     function hasCode(
-        StateData storage self,
         address _addr
     )
-        external
+        public
         view
         returns(bool)
     {
-        return (self.stateTrie[_addr].codeHash ^ EMPTY_HASH != 0);
+        return (worldState.stateTrie[_addr].codeHash ^ EMPTY_HASH != 0);
     }
 
     function getCode(
-        StateData storage self,
         address _addr
     )
-        external
+        public
         view
         returns(bytes)
     {
-        return self.codeTrie[_addr];
+        return worldState.codeTrie[_addr];
     }
 
     function getNonce(
-        StateData storage self,
         address _addr
     )
-        external
+        public
         view
         returns(uint256)
     {
-        return self.stateTrie[_addr].nonce;
+        return worldState.stateTrie[_addr].nonce;
     }
 
     function addNonce(
-        StateData storage self,
         address _addr
     )
-        external
+        public
         returns(uint256)
     {
-        self.stateTrie[_addr].nonce = self.stateTrie[_addr].nonce.add(1);
-        return self.stateTrie[_addr].nonce;
+        worldState.stateTrie[_addr].nonce = worldState.stateTrie[_addr].nonce.add(1);
+        return worldState.stateTrie[_addr].nonce;
     }
 
     function getBalance(
-        StateData storage self,
         address _addr
     )
-        external
+        public
         view
         returns(uint256)
     {
-        return self.stateTrie[_addr].balance;
+        return worldState.stateTrie[_addr].balance;
     }
 
     function addBalance(
-        StateData storage self,
         address _addr,
         uint256 _value
     )
-        external
+        public
         returns(uint256)
     {
-        self.stateTrie[_addr].balance = self.stateTrie[_addr].balance.add(_value);
-        return self.stateTrie[_addr].balance;
+        worldState.stateTrie[_addr].balance = worldState.stateTrie[_addr].balance.add(_value);
+        return worldState.stateTrie[_addr].balance;
     }
 
     function subBalance(
-        StateData storage self,
         address _addr,
         uint256 _value
     )
-        external
+        public
         returns(uint256)
     {
-        require(self.stateTrie[_addr].balance >= _value, "Balance is not enough.");
-        self.stateTrie[_addr].balance = self.stateTrie[_addr].balance.sub(_value);
-        return self.stateTrie[_addr].balance;
+        require(worldState.stateTrie[_addr].balance >= _value, "Balance is not enough.");
+        worldState.stateTrie[_addr].balance = worldState.stateTrie[_addr].balance.sub(_value);
+        return worldState.stateTrie[_addr].balance;
     }
 
 }
