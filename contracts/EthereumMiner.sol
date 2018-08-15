@@ -11,13 +11,13 @@ contract EthereumMiner is
     // 默认的区块 gasLimit 常量
     uint256 public constant BLOCK_GAS_LIMIT = 100;
     // 交易池
-    EthereumChainData.Transaction[] private transactionsPool;
+    EthereumChainData.Transaction[] internal transactionsPool;
     // 当前已消耗 gas 累计
     uint256 public gasUsed;
     // 是否正在记账
-    bool private isCurrentMiner;
+    bool internal isCurrentMiner;
     // 以太坊网络模拟器
-    EthereumSimulatorBase private networkSimulator;
+    EthereumSimulatorBase internal networkSimulator;
 
     /**
      * @dev 创建矿工合约，需要以太坊协议模拟器合约已创建
@@ -41,7 +41,7 @@ contract EthereumMiner is
         _;
     }
 
-    modifier onlyFromSimulator() {
+    modifier onlySimulator() {
         require(
             (msg.sender == address(networkSimulator) ||
             tx.origin == owner),
@@ -66,11 +66,11 @@ contract EthereumMiner is
         );
     }
 
-    function applyReward(uint256 _reward) external onlyFromSimulator {
+    function applyReward(uint256 _reward) external onlySimulator {
         addBalance(address(owner), _reward);
     }
 
-    function prepareToCreateBlock() external isNotAccounting onlyFromSimulator {
+    function prepareToCreateBlock() external isNotAccounting onlySimulator {
         isCurrentMiner = true;
     }
 
@@ -88,7 +88,7 @@ contract EthereumMiner is
     )
         external
         isAccounting
-        onlyFromSimulator
+        onlySimulator
         returns (bool)
     {
         // 需要创世区块创建之后才能开始处理交易
@@ -114,7 +114,7 @@ contract EthereumMiner is
         }
     }
 
-    function finalizeBlock() external isAccounting onlyFromSimulator returns (bytes) {
+    function finalizeBlock() external isAccounting onlySimulator returns (bytes) {
         // 执行交易池中的所有交易
         require(transactionsPool.length > 0, "Need to add transaction before finalize block.");
         Transaction memory transaction = Transaction({
@@ -138,12 +138,8 @@ contract EthereumMiner is
         isCurrentMiner = false;
     }
 
-    function applyBlock(bytes _blockData) external isNotAccounting onlyFromSimulator {
-
-    }
-
     function initBlockHeader(BlockHeader memory _bHeader, uint256 _gasUsed)
-        private view returns (BlockHeader)
+        internal view returns (BlockHeader)
     {
         _bHeader.parentHash = getLatestBlockHash();
         _bHeader.beneficiary = owner;
@@ -156,6 +152,10 @@ contract EthereumMiner is
         _bHeader.timeStamp = block.timestamp;
         _bHeader.extraData = bytes32("Mined by simple miner.");
         return _bHeader;
+    }
+
+    function applyBlock(bytes _blockData) external isNotAccounting onlySimulator {
+
     }
 
 }
