@@ -39,17 +39,6 @@ contract EthereumChainData {
         mapping(bytes32 => uint256) transactions;
     }
 
-    event LogTransactionData(
-        bytes32 indexed _txHash,
-        address indexed _from,
-        uint256 _nonce,
-        uint256 _gasLimit,
-        uint256 _gasPrice,
-        address _to,
-        uint256 _value,
-        bytes _data
-    );
-
     // Chain data
     ChainData internal chainData;
 
@@ -115,13 +104,6 @@ contract EthereumChainData {
         uint256 blockCount = chainData.blocks.length;
         require(blockCount > 0);
         return chainData.blocks[blockCount - 1].header.difficulty.add(10);
-    }
-
-    function emitLogTransaction(bytes32 _txHash) internal {
-        uint256 txIndex = chainData.transactions[_txHash];
-        require(txIndex > 0);
-        Transaction storage curTx = chainData.blocks[txIndex].txData;
-        emit LogTransactionData(_txHash, curTx.from, curTx.nonce, curTx.gasLimit, curTx.gasPrice, curTx.to, curTx.value, curTx.data);
     }
 
 }
