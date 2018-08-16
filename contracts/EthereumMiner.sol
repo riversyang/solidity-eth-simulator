@@ -56,7 +56,7 @@ contract EthereumMiner is
         // 注册所有必要的接口
         _registerInterface(bytes4(keccak256("prepareToCreateBlock()")));
         _registerInterface(bytes4(keccak256("addTransaction(address,uint256,uint256,address,uint256,bytes)")));
-        _registerInterface(bytes4(keccak256("applyReward(uint256)")));
+        _registerInterface(bytes4(keccak256("applyReward()")));
         _registerInterface(bytes4(keccak256("finalizeBlock()")));
         _registerInterface(bytes4(keccak256("applyBlock(bytes)")));
         // 创建创世区块
@@ -97,8 +97,8 @@ contract EthereumMiner is
         );
     }
 
-    function applyReward(uint256 _reward) external onlySimulator {
-        addBalance(owner, _reward);
+    function applyReward() external onlySimulator {
+        addBalance(owner, BLOCK_REWARD);
     }
 
     function prepareToCreateBlock() external isNotAccounting onlySimulator {

@@ -9,8 +9,6 @@ contract EthereumSimulator {
     using AddressUtils for address;
     // 对所有 uint256 类型使用 SafeMath
     using SafeMath for uint256;
-    // 给矿工的区块奖励
-    uint256 public constant BLOCK_REWARD = 100000000;
     // 记录所有矿工地址的数组
     address[] public allMiners;
     // 矿工地址到其 Stake 数值的映射
@@ -47,7 +45,7 @@ contract EthereumSimulator {
             "Your contract doesn't have necessary functions."
         );
         require(
-            siwl.supportsInterface(bytes4(keccak256("applyReward(uint256)"))),
+            siwl.supportsInterface(bytes4(keccak256("applyReward()"))),
             "Your contract doesn't have necessary functions."
         );
         require(
@@ -135,7 +133,7 @@ contract EthereumSimulator {
         external
     {
         require(allMiners.length > 0, "Need at least one miner.");
-        EthereumMinerBase(curMiner).applyReward(BLOCK_REWARD);
+        EthereumMinerBase(curMiner).applyReward();
         EthereumMinerBase(curMiner).addTransaction(msg.sender, _gasLimit, _gasPrice, _to, _value, _data);
         bytes memory blockData = EthereumMinerBase(curMiner).finalizeBlock();
         for (uint256 i = 0; i < allMiners.length; i++) {
@@ -151,7 +149,7 @@ contract EthereumSimulator {
 interface EthereumMinerBase {
     function prepareToCreateBlock() external;
     function addTransaction(address, uint256, uint256, address, uint256, bytes) external;
-    function applyReward(uint256) external;
+    function applyReward() external;
     function finalizeBlock() external returns (bytes);
     function applyBlock(bytes) external;
 }
